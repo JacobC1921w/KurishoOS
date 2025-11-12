@@ -1,0 +1,1 @@
+kernelSectors equ 42

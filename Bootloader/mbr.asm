@@ -1,7 +1,7 @@
 [bits 16]
 [org 0x7c00]
 
-%include "./Build/Intermediate/kernelSize.inc"
+%include "./Build/Intermediate/kernel_size.inc"
 
 kernel_offset equ 0x1000
 
@@ -16,8 +16,8 @@ call switch_to_32bit
 jmp $
 
 %include "./Bootloader/disk.asm"
-%include "./Bootloader/globalDescriptorTable.asm"
-%include "./Bootloader/switchTo32Bit.asm"
+%include "./Bootloader/gdt.asm"
+%include "./Bootloader/switch_to_32bit_mode.asm"
 
 [bits 16]
 load_kernel:

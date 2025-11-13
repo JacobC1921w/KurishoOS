@@ -1,1 +1,6 @@
-Intermediate/*
+Build/Intermediate/kernel_entry.o
+Build/Intermediate/kernel_size.inc
+Build/Intermediate/kernel.bin
+Build/Intermediate/kernel.o
+Build/Intermediate/keyboard.o
+Build/Intermediate/mbr.bin

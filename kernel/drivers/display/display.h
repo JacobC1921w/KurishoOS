@@ -22,6 +22,7 @@ void memory_copy(char *source, char *dest, int n_bytes);
 int scroll_line(int offset);
 void print_string(char *string);
 void clear_screen();
+void print_backspace();
 
 #pragma endregion Function prototypes
 

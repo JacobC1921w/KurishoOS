@@ -1,3 +1,5 @@
+
+#include "kernel.h"
 #include "./drivers/port/port.h"
 #include "./drivers/display/display.h"
 #include "./drivers/keyboard/keyboard.h"
@@ -25,4 +27,6 @@ void main() {
     print_string("Initializing keyboard (IRQ 1)...");
     initialize_keyboard();
     print_string(" DONE!\n");
+
+    print_string("> ");
 }

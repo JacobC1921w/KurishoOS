@@ -189,3 +189,8 @@ void clear_screen() {
     set_cursor(get_offset(0, 0));
 }
 
+void print_backspace() {
+    int cursor_position = get_cursor();
+    set_char_at_memory(' ', cursor_position - 2);
+    set_cursor(cursor_position - 2);
+}

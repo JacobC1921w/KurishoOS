@@ -3,3 +3,5 @@ build/intermediate/*.bin
 build/intermediate/kernel_size.inc
 
 build/out/os_image.bin
+
+.vscode/

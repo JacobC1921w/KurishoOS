@@ -49,3 +49,93 @@ char* uint_32_base_convert(uint32_t value, char *buffer, int base) {
 
     return buffer;
 }
+
+/**
+ * @brief Calculates the length of a null-terminated string.
+ *
+ * This function iterates through the input character array until it encounters 
+ * the null terminator ('\0'). It implements the equivalent functionality of 
+ * the standard library's strlen().
+ *
+ * @param input The null-terminated character array (string).
+ * @return int The number of characters in the string, excluding the 
+ * null terminator.
+ */
+int string_length(char input[]) {
+    int i = 0;
+    while (input[i] != '\0') {
+        ++i;
+    }
+
+    return i;
+}
+
+/**
+ * @brief Appends a single character to the end of a null-terminated string.
+ *
+ * This function determines the current length of the input string, places the 
+ * new character 'n' at the index corresponding to that length, and ensures 
+ * the string remains null-terminated by placing '\0' immediately after the 
+ * appended character.
+ *
+ * WARNING: The caller must ensure the 'input' buffer has sufficient space 
+ * for the new character plus the null terminator.
+ *
+ * @param input The null-terminated character array (string) to modify.
+ * @param n The single character to append.
+ * @return void
+ */
+void append_char(char input[], char n) {
+    int string_len = string_length(input);
+    input[string_len] = n;
+    input[string_len + 1] = '\0';
+}
+
+/**
+ * @brief Compares two null-terminated strings lexicographically.
+ *
+ * This function iterates through both strings, comparing corresponding characters.
+ * It implements the equivalent functionality of the standard library's strcmp().
+ *
+ * @param s1 The first null-terminated string.
+ * @param s2 The second null-terminated string.
+ * @return int 
+ * - 0 if s1 and s2 are identical.
+ * - A negative value if the first differing character in s1 is less than 
+ * that in s2.
+ * - A positive value if the first differing character in s1 is greater than 
+ * that in s2.
+ */
+int string_compare(char s1[], char s2[]) {
+    int i;
+    for (i = 0; s1[i] == s2[i]; i++) {
+        if (s1[i] == '\0') return 0;
+    }
+    return s1[i] - s2[i];
+}
+
+/**
+ * @brief Converts an uppercase ASCII character to its lowercase equivalent.
+ *
+ * This function checks if the input character 'c' is in the range of 
+ * uppercase letters ('A' through 'Z'). If it is, it sets the 5th bit (0x20) 
+ * using a bitwise OR operation to convert it to lowercase, exploiting the 
+ * structure of the ASCII table.
+ *
+ * @param c The character to be converted.
+ * @return char The lowercase equivalent of 'c' if it was uppercase, 
+ * otherwise the original character 'c' is returned unchanged.
+ */
+char char_lower(char c) {
+    if (c >= 'A' && c <= 'Z') {
+        c = c | 0x20;
+    }
+    return c;
+}
+
+char char_upper(char c) {
+    if (c >= 'a' && c <= 'z') {
+        c = c & ~0x20;
+    }
+    return c;
+}

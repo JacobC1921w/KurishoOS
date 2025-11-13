@@ -1,3 +1,5 @@
+#include <stdbool.h>
+
 #include "keyboard.h"
 #include "../display/display.h"
 #include "../port/port.h"
@@ -29,18 +31,25 @@
 };
 
 /**
- * @brief Default handler for Interrupt Service Routines (ISRs) and CPU exceptions.
+ * @brief Primary Interrupt Service Routine (ISR) handler for CPU exceptions.
  *
- * This function serves as the common entry point for handling hardware interrupts
- * and CPU exceptions (like division by zero, page faults, etc.) that are routed
- * through the Interrupt Descriptor Table (IDT).
+ * This function is the high-level C entry point for all CPU exceptions 
+ * (interrupts 0-31) triggered by the CPU itself, dispatched after the 
+ * assembly stub has saved the CPU state. It analyzes the interrupt number 
+ * and prints a descriptive message to the console.
  *
- * It prints the descriptive message associated with the specific interrupt number
- * and then prints a newline.
+ * It classifies interrupts into three main categories:
+ * 1. CPU Exceptions (0-21): Prints the predefined message from the 
+ * 'exception_messages' array.
+ * 2. Reserved Exceptions (22-31): Prints a message including the interrupt 
+ * number in decimal.
+ * 3. External/IRQ (32-224): Prints a message including the interrupt 
+ * number in hexadecimal.
  *
- * @param reg A pointer to a 'registers' structure containing the saved state of the
- * CPU's registers (including the interrupt number) at the time of the interrupt.
- * @return void This function does not return a value.
+ * @param reg A pointer to the 'registers' structure containing the CPU state 
+ * (pushed onto the stack by the assembly stub) and the specific 
+ * interrupt number ('reg->interrupt_number') that was triggered.
+ * @return void
  */
 void isr_handler(registers *reg) {
 
@@ -49,18 +58,19 @@ void isr_handler(registers *reg) {
         print_string("\n");
     } else if (reg->interrupt_number >= 22 && reg->interrupt_number <= 31) {
         char interrupt_string[11];
-
         print_string("Exception: Future reservation (interrupt number: ");
         print_string(uint_32_base_convert(reg->interrupt_number, interrupt_string, 10));
         print_string(")\n");
     } else if (reg->interrupt_number > 31 && reg->interrupt_number <= 224) {
-        
         char interrupt_string[11];
         print_string("Exception: External interrupt (0x");
         print_string(uint_32_base_convert(reg->interrupt_number, interrupt_string, 16));
         print_string(")\n");
     } else {
-        print_string("Exception: Unrecognised interrupt number ()\n");
+        char interrupt_string[11];
+        print_string("Exception: Unrecognised interrupt number (");
+        print_string(uint_32_base_convert(reg->interrupt_number, interrupt_string, 10));
+        print_string(")\n");
     }
 }
 
@@ -126,17 +136,17 @@ void irq_handler(registers *reg) {
  */
 void load_idt() {
     idt_reg.base = (uint32_t) &idt;
-    idt_reg.limit = idt_entries * sizeof(idt_gate) - 1;
+    idt_reg.limit = IDT_ENTRIES * sizeof(idt_gate) - 1;
     asm volatile("lidt (%0)" : : "r" (&idt_reg));
 }
 
 // Configures the Interrupt Gate descriptor for the interrupt number 'n' using the provided handler address.
 idt_gate set_idt_gate(int n, uint16_t handler) {
-    idt[n].low_offset = low_16(handler);
+    idt[n].low_offset = LOW16(handler);
     idt[n].selector = 0x08;
     idt[n].always_0 = 0;
     idt[n].flags = 0x8E;
-    idt[n].high_offset = high_16(handler);
+    idt[n].high_offset = HIGH16(handler);
 }
 
 /**
@@ -222,303 +232,227 @@ void isr_install() {
     load_idt();
 };
 
+char scan_code_chars[] = {
+    '?', '?', '1', '2', '3', '4', '5', '6', 
+    '7', '8', '9', '0', '-', '=', '?', '?',
+    'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I',
+    'O', 'P', '[', ']', '?', '?', 'A', 'S',
+    'D', 'F', 'G', 'H', 'J', 'K', 'L', ';',
+    '\'', '`', '?', '\\', 'Z', 'X', 'C', 'V',
+    'B', 'N', 'M', ',', '.', '/', '?', '*',
+    '?', ' ', '?', '?', '?', '?', '?', '?',
+    '?', '?', '?', '?', '?', '?', '?', '7',
+    '?', '?', '-', '?', '5', '?', '+', '1',
+    '?', '?', '?', '?', '?', '?'
+};
+
+char *scan_code_specials[] = {
+    "ERROR", "Escape", "?", "?", "?", "?", "?", "?", 
+    "?", "?", "?", "?", "?", "?", "Backspace", "Tab",
+    "?", "?", "?", "?", "?", "?", "?", "?",
+    "?", "?", "?", "?", "Enter", "Left control", "?", "?",
+    "?", "?", "?", "?", "?", "?", "?", "?",
+    "?", "?", "Left shift", "?", "?", "?", "?", "?",
+    "?", "?", "?", "?", "?", "?", "Right shift", "?",
+    "Left alt", "?", "Caps lock", "F1", "F2", "F3", "F4", "F5",
+    "F6", "F7", "F8", "F9", "F10", "Num lock", "Scroll lock", "?",
+    "Arrow up", "Page up", "?", "Arrow left", "?", "Arrow right", "?", "?",
+    "Arrow down", "Page down", "Insert", "Delete", "F11", "F12"
+};
+
+char key_buffer[256];
+
 /**
- * @brief Translates a keyboard scan code into a readable text description and prints it.
+ * @brief Handles the backspace action on a string buffer.
  *
- * This function processes raw data (scan codes) received from the keyboard controller
- * and attempts to identify the pressed or released key. It is designed to work with
- * Scan Code Set 1, a common standard for PS/2 keyboards.
- *
- * @param scan_code The raw 8-bit scan code received from the keyboard hardware.
- * @return void This function does not return a value.
+ * This function shortens the given null-terminated string buffer by one 
+ * character if the buffer is not already empty. The character at the 
+ * end of the string is replaced with the null terminator ('\0').
+ * * @param buffer The character array buffer to perform the backspace action on. 
+ * This parameter is currently only read to determine the length.
+ * @return bool Returns true if a character was removed (the string length was > 0).
+ * Returns false if the buffer was already empty.
  */
-void print_letter(uint8_t scan_code) {
-    switch (scan_code) {
-        case 0x0:
-            print_string("Key down: ERROR");
-            break;
-        case 0x01:
-            print_string("Key down: escape");
-            break;
-        case 0x02:
-            print_string("Key down: 1");
-            break;
-        case 0x03:
-            print_string("Key down: 2");
-            break;
-        case 0x04:
-            print_string("Key down: 3");
-            break;
-        case 0x05:
-            print_string("Key down: 4");
-            break;
-        case 0x06:
-            print_string("Key down: 5");
-            break;
-        case 0x07:
-            print_string("Key down: 6");
-            break;
-        case 0x08:
-            print_string("Key down: 7");
-            break;
-        case 0x09:
-            print_string("Key down: 8");
-            break;
-        case 0x0A:
-            print_string("Key down: 9");
-            break;
-        case 0x0B:
-            print_string("Key down: 0");
-            break;
-        case 0x0C:
-            print_string("Key down: -");
-            break;
-        case 0x0D:
-            print_string("Key down: =");
-            break;
-        case 0x0E:
-            print_string("Key down: backspace");
-            break;
-        case 0x0F:
-            print_string("Key down: tab");
-            break;
-        case 0x10:
-            print_string("Key down: Q");
-            break;
-        case 0x11:
-            print_string("Key down: W");
-            break;
-        case 0x12:
-            print_string("Key down: E");
-            break;
-        case 0x13:
-            print_string("Key down: R");
-            break;
-        case 0x14:
-            print_string("Key down: T");
-            break;
-        case 0x15:
-            print_string("Key down: Y");
-            break;
-        case 0x16:
-            print_string("Key down: U");
-            break;
-        case 0x17:
-            print_string("Key down: I");
-            break;
-        case 0x18:
-            print_string("Key down: O");
-            break;
-        case 0x19:
-            print_string("Key down: P");
-            break;
-        case 0x1A:
-            print_string("Key down: [");
-            break;
-        case 0x1B:
-            print_string("Key down: ]");
-            break;
-        case 0x1C:
-            print_string("Key down: enter");
-            break;
-        case 0x1D:
-            print_string("Key down: left control");
-            break;
-        case 0x1E:
-            print_string("Key down: A");
-            break;
-        case 0x1F:
-            print_string("Key down: S");
-            break;
-        case 0x20:
-            print_string("Key down: D");
-            break;
-        case 0x21:
-            print_string("Key down: F");
-            break;
-        case 0x22:
-            print_string("Key down: G");
-            break;
-        case 0x23:
-            print_string("Key down: H");
-            break;
-        case 0x24:
-            print_string("Key down: J");
-            break;
-        case 0x25:
-            print_string("Key down: K");
-            break;
-        case 0x26:
-            print_string("Key down: L");
-            break;
-        case 0x27:
-            print_string("Key down: ;");
-            break;
-        case 0x28:
-            print_string("Key down: '");
-            break;
-        case 0x29:
-            print_string("Key down: `");
-            break;
-        case 0x2A:
-            print_string("Key down: left shift");
-            break;
-        case 0x2B:
-            print_string("Key down: \\");
-            break;
-        case 0x2C:
-            print_string("Key down: Z");
-            break;
-        case 0x2D:
-            print_string("Key down: X");
-            break;
-        case 0x2E:
-            print_string("Key down: C");
-            break;
-        case 0x2F:
-            print_string("Key down: V");
-            break;
-        case 0x30:
-            print_string("Key down: B");
-            break;
-        case 0x31:
-            print_string("Key down: N");
-            break;
-        case 0x32:
-            print_string("Key down: M");
-            break;
-        case 0x33:
-            print_string("Key down: ,");
-            break;
-        case 0x34:
-            print_string("Key down: .");
-            break;
-        case 0x35:
-            print_string("Key down: /");
-            break;
-        case 0x36:
-            print_string("Key down: right shift");
-            break;
-        case 0x37:
-            print_string("Key down: (keypad) *");
-            break;
-        case 0x38:
-            print_string("Key down: left alt");
-            break;
-        case 0x39:
-            print_string("Key down: space");
-            break;
-        case 0x3A:
-            print_string("Key down: CapsLock");
-            break;
-        case 0x3B:
-            print_string("Key down: F1");
-            break;
-        case 0x3C:
-            print_string("Key down: F2");
-            break;
-        case 0x3D:
-            print_string("Key down: F3");
-            break;
-        case 0x3E:
-            print_string("Key down: F4");
-            break;
-        case 0x3F:
-            print_string("Key down: F5");
-            break;
-        case 0x40:
-            print_string("Key down: F6");
-            break;
-        case 0x41:
-            print_string("Key down: F7");
-            break;
-        case 0x42:
-            print_string("Key down: F8");
-            break;
-        case 0x43:
-            print_string("Key down: F9");
-            break;
-        case 0x44:
-            print_string("Key down: F10");
-            break;
-        case 0x45:
-            print_string("Key down: NumberLock");
-            break;
-        case 0x46:
-            print_string("Key down: ScrollLock");
-            break;
-        case 0x47:
-            print_string("Key down: (keypad) 7");
-            break;
-        case 0x48:
-            print_string("Key down: arrow up"); //(keypad) 8 ?
-            break;
-        case 0x49:
-            print_string("Key down: page up"); //(keypad) 9 ?
-            break;
-        case 0x4A:
-            print_string("Key down: (keypad) -");
-            break;
-        case 0x4B:
-            print_string("Key down: arrow left"); //(keypad) 4 ?
-            break;
-        case 0x4C:
-            print_string("Key down: (keypad) 5");
-            break;
-        case 0x4D:
-            print_string("Key down: arrow right"); //(keypad) 6 ?
-            break;
-        case 0x4E:
-            print_string("Key down: (keypad) +");
-            break;
-        case 0x4F:
-            print_string("Key down: (keypad) 1");
-            break;
-        case 0x50:
-            print_string("Key down: arrow down"); //(keypad) 2 ?
-            break;
-        case 0x51:
-            print_string("Key down: page down"); //(keypad) 3 ?
-            break;
-        case 0x52:
-            print_string("Key down: insert"); //(keypad) 0 ?
-            break;
-        case 0x53:
-            print_string("Key down: delete"); //(keypad) . ?
-            break;
-        case 0x57:
-            print_string("Key down: F11");
-            break;
-        case 0x58:
-            print_string("Key down: F12");
-            break;
-        default:
-            if (scan_code <= 0x7f) {
-            print_string("Key down: Unknown");
-            } else if (scan_code <= 0x58 + 0x80) {
-            print_string("Key up: ");
-                print_letter(scan_code - 0x80);
-            } else {
-            print_string("Key up: Unknown");
-            }
-            break;
+bool backspace(char buffer[]) {
+    int string_len = string_length(buffer);
+    if (string_len > 0) {
+        key_buffer[string_len - 1] = '\0';
+        return true;
+    } else {
+        return false;
     }
 }
 
+void parse_command(char *input) {
+    if (string_compare(input, "exit") == 0) {
+        print_string("Halting system processes...\n");
+        asm volatile("hlt");
+    }
+
+    print_string("Unknown command: ");
+    print_string(input);
+    print_string("\n> ");
+}
+
+
+
 /**
- * @brief The dedicated Interrupt Service Routine (ISR) handler for the keyboard (IRQ 1).
+ * @brief Retrieves the current status (on/off) of a keyboard lock key LED.
  *
- * This function is the C-level handler executed when the keyboard generates a
- * hardware interrupt (IRQ 1). It reads the raw scan code data from the keyboard's
- * data port and then processes it for display.
+ * This function communicates directly with the PS/2 keyboard controller
+ * to get the current LED status byte and checks the specified bit.
  *
- * @param reg A pointer to the saved CPU registers at the time of the interrupt.
- * @return void This function does not return a value.
+ * @param lock_bit The bit mask corresponding to the desired lock key:
+ * - 0x01 (Bit 0): Scroll Lock
+ * - 0x02 (Bit 1): Num Lock
+ * - 0x04 (Bit 2): Caps Lock
+ * @return bool Returns true if the specified lock light is ON (lit), false otherwise.
  */
+bool get_lock_status(int lock_bit) {
+    uint8_t status_byte;
+    uint8_t ack_byte;
+
+    while (port_byte_in(PS2_CMD_PORT) & PS2_STATUS_IBF);
+    port_byte_out(PS2_DATA_PORT, KB_CMD_SET_LED); 
+
+    while (!(port_byte_in(PS2_CMD_PORT) & PS2_STATUS_OBF));
+    ack_byte = port_byte_in(PS2_DATA_PORT);
+    
+    if (ack_byte != KB_ACK) {
+        return false; 
+    }
+
+    while (port_byte_in(PS2_CMD_PORT) & PS2_STATUS_IBF);
+    port_byte_out(PS2_DATA_PORT, 0x00);
+
+    while (!(port_byte_in(PS2_CMD_PORT) & PS2_STATUS_OBF));
+    port_byte_in(PS2_DATA_PORT); 
+    
+    while (!(port_byte_in(PS2_CMD_PORT) & PS2_STATUS_OBF));
+    status_byte = port_byte_in(PS2_DATA_PORT);
+
+    return (status_byte & lock_bit) != 0;
+}
+
+/**
+ * @brief Sends a command to the PS/2 keyboard to set the status of the lock key LEDs.
+ *
+ * The caller determines the combined state of all three lock keys (Scroll, Num, Caps) 
+ * and provides the resulting status byte to this function.
+ *
+ * @param lock_bit The 8-bit status byte where bits 0, 1, and 2 represent 
+ * the desired ON/OFF state for Scroll, Num, and Caps Lock, respectively.
+ * @return bool Returns true if the keyboard acknowledged the command, false otherwise.
+ */
+bool set_lock_status(uint8_t lock_bit) {
+    uint8_t ack_byte;
+
+    while (port_byte_in(PS2_CMD_PORT) & PS2_STATUS_IBF);
+    port_byte_out(PS2_DATA_PORT, KB_CMD_SET_LED); 
+
+    while (!(port_byte_in(PS2_CMD_PORT) & PS2_STATUS_OBF));
+    ack_byte = port_byte_in(PS2_DATA_PORT);
+    
+    if (ack_byte != KB_ACK) {
+        return false;
+    }
+
+    while (port_byte_in(PS2_CMD_PORT) & PS2_STATUS_IBF);
+    port_byte_out(PS2_DATA_PORT, lock_bit);
+
+    while (!(port_byte_in(PS2_CMD_PORT) & PS2_STATUS_OBF));
+    ack_byte = port_byte_in(PS2_DATA_PORT);
+    
+    if (ack_byte != KB_ACK) {
+        return false;
+    }
+    
+    return true; 
+}
+
+uint8_t current_led_status_byte = 0x00;
+bool is_shift_pressed = false;
+
+/**
+ * @brief Toggles the state of a single keyboard lock key LED and updates the hardware.
+ *
+ * This function handles the state change for a lock key press (Caps, Num, or Scroll). 
+ * It updates the global state variable 'current_led_status_byte' by flipping the 
+ * bit corresponding to the pressed key (using the XOR operation), commands the 
+ * PS/2 keyboard hardware to reflect the full new state, and returns the resulting
+ * status byte.
+ *
+ * @param lock_bit The bit mask corresponding to the lock key whose state 
+ * should be toggled (e.g., 0x04 for Caps Lock).
+ * @return uint8_t The new, complete 8-bit LED status byte after the toggle 
+ * and hardware command have been executed.
+ */
+uint8_t toggle_lock_led(uint8_t lock_bit) {
+    current_led_status_byte ^= lock_bit;
+    set_lock_status(current_led_status_byte);
+    return current_led_status_byte;
+}
+
 static void keyboard_callback(registers *reg) {
     uint8_t scan_code = port_byte_in(0x60);
-    print_letter(scan_code);
-    print_string("\n");
+    
+    if (scan_code & 0x80) {
+        uint8_t make_code = scan_code & 0x7F; 
+
+        if (make_code == 0x2A || make_code == 0x36) {
+            is_shift_pressed = false;
+        }
+        return; 
+    }
+    
+
+    if (scan_code > SCAN_CODE_MAX) return;
+
+    if (scan_code == 0x2A || scan_code == 0x36) {
+        is_shift_pressed = true;
+        return;
+    }
+
+    if (scan_code_chars[(int) scan_code] == '?') {
+        char *scan_code_special = scan_code_specials[(int) scan_code];
+        if (scan_code_special == "Backspace") {
+            if (backspace(key_buffer)) {
+                print_backspace();
+            }
+        } else if (scan_code_special == "Enter") {
+            print_string("\n");
+            parse_command(key_buffer);
+            key_buffer[0] = '\0';
+
+        } else if (scan_code_special == "Caps lock") {
+            toggle_lock_led(CAPS_LOCK_BIT);
+
+        } else if (scan_code_special == "Num lock") {
+            toggle_lock_led(NUM_LOCK_BIT);
+
+        } else if (scan_code_special == "Scroll lock") {
+            toggle_lock_led(SCROLL_LOCK_BIT);
+
+        }
+        return; 
+    } else { 
+        char letter = scan_code_chars[(int) scan_code];
+
+        if (letter >= 'A' && letter <= 'Z') {
+            
+            bool caps_on = (current_led_status_byte & CAPS_LOCK_BIT);
+            bool shift_on = is_shift_pressed;
+
+            if (caps_on == shift_on) {
+                letter = char_lower(letter);
+            }
+        }
+        
+        append_char(key_buffer, letter);
+
+        char str[2] = {letter, '\0'};
+        print_string(str);
+        }
 }
 
 /**

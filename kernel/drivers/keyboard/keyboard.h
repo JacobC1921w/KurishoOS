@@ -5,7 +5,7 @@
 
 #pragma region Constants
 
-#define idt_entries 256
+#define IDT_ENTRIES 256
 
 #define IRQ0 32
 #define IRQ1 33
@@ -24,8 +24,25 @@
 #define IRQ14 46
 #define IRQ15 47
 
-#define low_16(address) (uint16_t) ((address) & 0xFFFF)
-#define high_16(address) (uint16_t) (((address) >> 16) & 0xFFFF)
+
+// I/O Port Definitions for PS/2 Controller
+#define PS2_DATA_PORT 0x60
+#define PS2_CMD_PORT 0x64
+#define PS2_STATUS_OBF 0x01
+#define PS2_STATUS_IBF 0x02
+#define KB_CMD_SET_LED 0xED
+#define KB_ACK 0xFA
+#define SCROLL_LOCK_BIT 0x01
+#define NUM_LOCK_BIT 0x02
+#define CAPS_LOCK_BIT 0x04
+
+#define LEFT_SHIFT_KEYDOWN 0xAA
+#define RIGHT_SHIFT_KEYDOWN 0xB6
+
+#define LOW16(address) (uint16_t) ((address) & 0xFFFF)
+#define HIGH16(address) (uint16_t) (((address) >> 16) & 0xFFFF)
+
+#define SCAN_CODE_MAX 86
 
 #pragma endregion Constants
 
@@ -116,7 +133,11 @@ void register_interrupt_handler(uint8_t n, isr handler);
 void irq_handler(registers *reg);
 void load_idt();
 void isr_install();
-void print_letter(uint8_t scan_code);
+bool backspace(char buffer[]);
+void parse_command(char *input);
+bool get_lock_status(int lock_bit);
+bool set_lock_status(uint8_t lock_bit);
+uint8_t toggle_lock_led(uint8_t lock_bit);
 static void keyboard_callback(registers *reg);
 void initialize_keyboard();
 

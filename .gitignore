@@ -4,3 +4,4 @@ Build/Intermediate/kernel.bin
 Build/Intermediate/kernel.o
 Build/Intermediate/keyboard.o
 Build/Intermediate/mbr.bin
+Build/Out/os_image.bin

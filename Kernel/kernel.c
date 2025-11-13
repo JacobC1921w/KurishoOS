@@ -7,7 +7,7 @@ void main() {
     print_string("-------------------------------\n");
     print_string("\n Welcome to Kurisho OS ");
     print_string(BUILD_NUMBER);
-    print_string("-------------------------------\n");
+    print_string("\n-------------------------------\n");
 
     print_string("Installing interrupt service routines (ISRs).\n");
     isr_install();

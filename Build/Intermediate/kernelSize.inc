@@ -1,1 +1,1 @@
-kernelSectors equ 42
+kernel_sectors equ 42

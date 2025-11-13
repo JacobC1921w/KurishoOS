@@ -1,7 +1,7 @@
-globalDescriptorTableStart:
+gdt_start:
     dq 0x0
 
-globalDescriptorTableCode:
+gdt_code:
     dw 0xffff
     dw 0x0
     db 0x0
@@ -9,7 +9,7 @@ globalDescriptorTableCode:
     db 11001111b
     db 0x0
 
-globalDescriptorTableData:
+gdt_data:
     dw 0xffff
     dw 0x0
     db 0x0
@@ -17,12 +17,12 @@ globalDescriptorTableData:
     db 11001111b
     db 0x0
 
-globalDescriptorTableEnd:
+gdt_end:
 
 ; GDT descriptor
-globalDescriptorTableDescriptor:
-    dw globalDescriptorTableEnd - globalDescriptorTableStart - 1
-    dd globalDescriptorTableStart
+gdt_descriptor:
+    dw gdt_end - gdt_start - 1
+    dd gdt_start
 
-codeSeg equ globalDescriptorTableCode - globalDescriptorTableStart
-dataSeg equ globalDescriptorTableData - globalDescriptorTableStart
+code_segment equ gdt_code - gdt_start
+dataSeg equ gdt_data - gdt_start

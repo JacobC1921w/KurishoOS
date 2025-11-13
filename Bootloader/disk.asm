@@ -1,4 +1,4 @@
-diskLoad:
+load_disk:
     pusha
     push dx
 
@@ -10,20 +10,20 @@ diskLoad:
     mov dh, 0x00
 
     int 0x13
-    jc diskError
+    jc disk_error
 
     pop dx
     cmp al, dh
                
-    jne sectorError
+    jne sector_error
     popa
     ret
 
-diskError:
-    jmp diskLoop
+disk_error:
+    jmp disk_loop
 
-sectorError:
-    jmp diskLoop
+sector_error:
+    jmp disk_loop
 
-diskLoop:
+disk_loop:
     jmp $

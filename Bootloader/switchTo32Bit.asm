@@ -1,14 +1,14 @@
 [bits 16]
-switchTo32BitMode:
+switch_to_32bit:
     cli
-    lgdt [globalDescriptorTableDescriptor]
+    lgdt [gdt_descriptor]
     mov eax, cr0
     or eax, 0x1
     mov cr0, eax
-    jmp codeSeg:initialize32BitMode
+    jmp code_segment:initialize_32bit
 
 [bits 32]
-initialize32BitMode:
+initialize_32bit:
     mov ax, dataSeg
     mov ds, ax
     mov ss, ax
@@ -19,4 +19,4 @@ initialize32BitMode:
     mov ebp, 0x90000
     mov esp, ebp
 
-    call begin32BitMode
+    call begin_32bit

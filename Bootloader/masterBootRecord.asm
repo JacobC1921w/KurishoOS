@@ -3,15 +3,15 @@
 
 %include "./Build/Intermediate/kernelSize.inc"
 
-kernelOffset equ 0x1000
+kernel_offset equ 0x1000
 
-mov [bootDrive], dl
+mov [boot_drive], dl
 
 mov bp, 0x9000
 mov sp, bp
 
-call loadKernel
-call switchTo32BitMode
+call load_kernel
+call switch_to_32bit
 
 jmp $
 
@@ -20,19 +20,19 @@ jmp $
 %include "./Bootloader/switchTo32Bit.asm"
 
 [bits 16]
-loadKernel:
-    mov bx, kernelOffset
-    mov dh, kernelSectors
-    mov dl, [bootDrive]
-    call diskLoad
+load_kernel:
+    mov bx, kernel_offset
+    mov dh, kernel_sectors
+    mov dl, [boot_drive]
+    call load_disk
     ret
 
 [bits 32]
-begin32BitMode:
-    call kernelOffset
+begin_32bit:
+    call kernel_offset
     jmp $
 
-bootDrive db 0
+boot_drive db 0
 
 times 510 - ($-$$) db 0
 

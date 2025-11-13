@@ -10,7 +10,7 @@ all: run
 	@echo "Creating kernel size include file..."
 	$(eval kernelsize=$(shell stat -f%z $< 2>/dev/null || stat -c%s $< 2>/dev/null))
 	$(eval sectors=$(shell echo "($(kernelsize) + 511) / 512" | bc))
-	echo "kernelSectors equ $(sectors)" > $@
+	echo "kernel_sectors equ $(sectors)" > $@
 
 ./Build/Intermediate/keyboard.o: ./Kernel/Drivers/keyboard.asm
 	nasm $< -f elf -o $@

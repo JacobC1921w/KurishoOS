@@ -2,13 +2,13 @@
 #include "./Drivers/keyboard.h"
 
 void main() {
-    clearScreen();
-    printString("Installing interrupt service routines (ISRs).\n");
-    ISRInstall();
+    clear_screen();
+    print_string("Installing interrupt service routines (ISRs).\n");
+    isr_install();
 
-    printString("Enabling external interrupts.\n");
+    print_string("Enabling external interrupts.\n");
     asm volatile("sti");
 
-    printString("Initializing keyboard (IRQ 1).\n");
-    initKeyboard();
+    print_string("Initializing keyboard (IRQ 1).\n");
+    initialize_keyboard();
 }

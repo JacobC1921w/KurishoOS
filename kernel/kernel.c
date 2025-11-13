@@ -1,5 +1,6 @@
-#include "./Drivers/display/display.c"
-#include "./Drivers/keyboard/keyboard.c"
+#include "./drivers/port/port.h"
+#include "./drivers/display/display.h"
+#include "./drivers/keyboard/keyboard.h"
 
 void main() {
     clear_screen();

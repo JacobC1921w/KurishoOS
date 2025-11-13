@@ -1,7 +1,5 @@
-Build/Intermediate/kernel_entry.o
-Build/Intermediate/kernel_size.inc
-Build/Intermediate/kernel.bin
-Build/Intermediate/kernel.o
-Build/Intermediate/keyboard.o
-Build/Intermediate/mbr.bin
-Build/Out/os_image.bin
+build/intermediate/*.o
+build/intermediate/*.bin
+build/intermediate/kernel_size.inc
+
+build/out/os_image.bin

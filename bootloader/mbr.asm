@@ -2,7 +2,7 @@
 [org 0x7c00]                ; Tells the assembler that this code will be loaded at memory address 0x7C00.
                             ; This is the standard boot sector address.
 
-%include "./Build/Intermediate/kernel_size.inc"
+%include "./build/intermediate/kernel_size.inc"
                             ; Includes a file that defines constants related to the kernel,
                             ; specifically 'kernel_sectors' (how much disk space the kernel takes).
 
@@ -21,11 +21,11 @@ call switch_to_32bit        ; Call the routine to transition the CPU from 16-bit
 
 jmp $                       ; If the previous call fails to transition, loop indefinitely (halt).
 
-%include "./Bootloader/disk.asm"
+%include "./bootloader/disk.asm"
                             ; Includes the assembly routines necessary for disk I/O (e.g., INT 13h calls).
-%include "./Bootloader/gdt.asm"
+%include "./bootloader/gdt.asm"
                             ; Includes the definition of the Global Descriptor Table (GDT) and its descriptor.
-%include "./Bootloader/switch_to_32bit_mode.asm"
+%include "./bootloader/switch_to_32bit_mode.asm"
                             ; Includes the mode switching code (like the previous example).
 
 [bits 16]

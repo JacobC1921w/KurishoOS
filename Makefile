@@ -15,7 +15,7 @@ all: run
 	$(eval sectors=$(shell echo "($(kernel_size) + 511) / 512" | bc))
 	echo "kernel_sectors equ $(sectors)" > $@
 
-./Build/Intermediate/keyboard.o: ./Kernel/Drivers/keyboard.asm
+./Build/Intermediate/keyboard.o: ./Kernel/Drivers/keyboard/keyboard.asm
 	nasm $< -f elf -o $@
 
 ./Build/Intermediate/kernel.bin: ./Build/Intermediate/kernel_entry.o ./Build/Intermediate/kernel.o ./Build/Intermediate/keyboard.o

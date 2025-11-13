@@ -189,32 +189,50 @@ isr31:
     jmp isr_common_stub
 
 isr_common_stub:
-    pusha
+    ; --- 1. SAVE CONTEXT (PUSH REGISTERS) ---
+    pusha                   ; Pushes all general-purpose registers (EAX, ECX, EDX, EBX, ESP, EBP, ESI, EDI).
 
+    ; Save the current Data Segment (DS) register value.
+    ; DS is 16-bit, but we need to save it as 32-bit (EAX) on the stack.
     mov ax, ds
     push eax
 
+    ; --- 2. SET UP KERNEL SEGMENTS ---
+    ; Set up flat memory model for the C handler.
+    ; 0x10 is the kernel data segment selector.
     mov ax, 0x10
     mov ds, ax
     mov es, ax
     mov fs, ax
     mov gs, ax
 
+    ; --- 3. CALL C HANDLER ---
+    ; Push the stack pointer (ESP) before calling the C handler.
+    ; This passes a pointer to the saved registers (the 'registers *reg' argument)
+    ; as the C function argument (C calling convention).
     push esp
-    call isr_handler
-    pop eax
+    call isr_handler        ; Call the C-level exception handler.
+    pop eax                 ; Clean up the pushed ESP argument from the stack.
 
-    pop eax
-    mov ds, ax
-    mov es, ax
+    ; --- 4. RESTORE SEGMENTS ---
+    ; Restore the original Data Segment value (EAX was used to save it).
+    pop eax                 ; Restore the original DS value into EAX.
+    mov ds, ax              ; Restore the original DS register.
+    mov es, ax              ; Restore other segment registers (ES, FS, GS) as well.
     mov fs, ax
     mov gs, ax
 
-    popa
+    ; --- 5. RESTORE CONTEXT AND RETURN ---
+    popa                    ; Restores all general-purpose registers (from step 1).
 
+    ; The interrupt vector number and an optional error code were pushed
+    ; onto the stack by the CPU or a preceding assembly stub.
+    ; We skip them here to balance the stack for the IRET instruction.
+    ; The number of bytes to pop (8) is calculated based on the size of
+    ; the pushed vector number (4 bytes) and the error code (4 bytes).
     add esp, 8
 
-    iret
+    iret                    ; Return from interrupt. Restores EIP, CS, EFLAGS from stack.
 
 global irq0
 global irq1
@@ -314,31 +332,49 @@ irq15:
     jmp irq_common_stub
 
 irq_common_stub:
-    pusha
+    ; --- 1. SAVE CONTEXT (PUSH REGISTERS) ---
+    pusha                   ; Save all general-purpose registers (EAX, ECX, etc.).
 
+    ; Save the current Data Segment (DS) register value.
+    ; DS is 16-bit, pushed as a 32-bit value (EAX) onto the stack.
     mov ax, ds
     push eax
 
+    ; --- 2. SET UP KERNEL SEGMENTS ---
+    ; Set up the kernel data segment (0x10) for the C handler's execution.
     mov ax, 0x10
     mov ds, ax
     mov es, ax
     mov fs, ax
     mov gs, ax
 
+    ; --- 3. CALL C HANDLER ---
+    ; Push the stack pointer (ESP). This passes a pointer to the saved
+    ; registers (the 'registers *reg' argument) to the C handler.
     push esp
+    call irq_handler        ; Call the C-level Hardware Interrupt Request handler.
+    pop ebx                 ; Clean up the pushed ESP argument from the stack.
+                            ; (Uses EBX instead of EAX, but the effect is the same: stack cleanup).
 
-    call irq_handler
-
-    pop ebx
-
-    pop eax
-    mov ds, ax
-    mov es, ax
+    ; --- 4. RESTORE SEGMENTS ---
+    ; Restore the original Data Segment value.
+    pop eax                 ; Restore original DS value from stack into EAX.
+    mov ds, ax              ; Restore the original DS register.
+    mov es, ax              ; Restore other segment registers (ES, FS, GS) as well.
     mov fs, ax
     mov gs, ax
 
-    popa
+    ; --- 5. RESTORE CONTEXT AND RETURN ---
+    popa                    ; Restore all general-purpose registers (from step 1).
 
+    ; The interrupt vector number and an optional error code were pushed
+    ; onto the stack by the CPU or a preceding assembly stub.
+    ; We skip them here. IRQs do not push an error code, so only the 4-byte
+    ; interrupt vector number needs to be skipped.
+    ; NOTE: The value '8' is used here, implying the preceding code either
+    ; unconditionally pushes a dummy error code or the stub is shared with
+    ; ISRs that do push error codes. If only the vector number (4 bytes) was pushed,
+    ; this should ideally be 'add esp, 4'. Assuming '8' is correct for this setup.
     add esp, 8
 
-    iret
+    iret                    ; Return from interrupt. Restores EIP, CS, EFLAGS from stack.

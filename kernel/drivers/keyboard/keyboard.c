@@ -30,27 +30,6 @@
     "Exception: Control protection exception"
 };
 
-/**
- * @brief Primary Interrupt Service Routine (ISR) handler for CPU exceptions.
- *
- * This function is the high-level C entry point for all CPU exceptions 
- * (interrupts 0-31) triggered by the CPU itself, dispatched after the 
- * assembly stub has saved the CPU state. It analyzes the interrupt number 
- * and prints a descriptive message to the console.
- *
- * It classifies interrupts into three main categories:
- * 1. CPU Exceptions (0-21): Prints the predefined message from the 
- * 'exception_messages' array.
- * 2. Reserved Exceptions (22-31): Prints a message including the interrupt 
- * number in decimal.
- * 3. External/IRQ (32-224): Prints a message including the interrupt 
- * number in hexadecimal.
- *
- * @param reg A pointer to the 'registers' structure containing the CPU state 
- * (pushed onto the stack by the assembly stub) and the specific 
- * interrupt number ('reg->interrupt_number') that was triggered.
- * @return void
- */
 void isr_handler(registers *reg) {
 
     if (reg->interrupt_number < 22) {
@@ -76,38 +55,10 @@ void isr_handler(registers *reg) {
 
 isr interruptHandlers[256];
 
-/**
- * @brief Registers a custom handler function for a specific interrupt number.
- *
- * This function stores the address of a user-defined Interrupt Service Routine (ISR)
- * in a lookup table, associating it with a specific interrupt number 'n'.
- * When an interrupt or exception 'n' occurs, the interrupt handler assembly stub
- * will use this table to call the registered function, allowing the OS to handle
- * different interrupts (e.g., keyboard, timer, exceptions) uniquely.
- *
- * @param n The number (0-255) of the hardware interrupt or CPU exception to register the handler for.
- * @param handler The function pointer (of type 'isr') to the custom handler routine.
- * @return void This function does not return a value.
- */
 void register_interrupt_handler(uint8_t n, isr handler) {
     interruptHandlers[n] = handler;
 }
 
-/**
- * @brief Default handler for Hardware Interrupt Requests (IRQs).
- *
- * This function serves as the common entry point for handling hardware interrupts
- * (e.g., from the keyboard, timer, or disk controller) that are routed
- * through the Interrupt Descriptor Table (IDT).
- *
- * It checks the global 'interruptHandlers' table for a custom handler registered
- * for the specific interrupt number and executes it if found. Crucially, it then
- * sends the End-of-Interrupt (EOI) signal to the Programmable Interrupt Controllers (PICs).
- *
- * @param reg A pointer to a 'registers' structure containing the saved state of the
- * CPU's registers at the time of the interrupt.
- * @return void This function does not return a value.
- */
 void irq_handler(registers *reg) {
     if (interruptHandlers[reg->interrupt_number] != 0) {
         isr handler = interruptHandlers[reg->interrupt_number];
@@ -123,24 +74,12 @@ void irq_handler(registers *reg) {
  idt_register idt_reg;
  idt_gate idt[256];
 
-/**
- * @brief Loads the Interrupt Descriptor Table (IDT) into the CPU's IDTR register.
- *
- * This function is the final step in initializing the IDT. It calculates the
- * memory address (base) and size (limit) of the IDT, populates a special
- * structure (idt_reg) with this information, and then uses the x86 'lidt'
- * assembly instruction to tell the CPU where the IDT is located in memory.
- * After this function executes, the CPU is prepared to handle interrupts and exceptions.
- *
- * @return void This function does not return a value.
- */
 void load_idt() {
     idt_reg.base = (uint32_t) &idt;
     idt_reg.limit = IDT_ENTRIES * sizeof(idt_gate) - 1;
     asm volatile("lidt (%0)" : : "r" (&idt_reg));
 }
 
-// Configures the Interrupt Gate descriptor for the interrupt number 'n' using the provided handler address.
 idt_gate set_idt_gate(int n, uint16_t handler) {
     idt[n].low_offset = LOW16(handler);
     idt[n].selector = 0x08;
@@ -149,19 +88,6 @@ idt_gate set_idt_gate(int n, uint16_t handler) {
     idt[n].high_offset = HIGH16(handler);
 }
 
-/**
- * @brief Initializes and installs the Interrupt Descriptor Table (IDT).
- *
- * This is the primary function for setting up the interrupt handling framework.
- * It performs two critical tasks:
- * 1. Populates the IDT with handlers for all 32 CPU exceptions (ISRs 0-31) and
- * all 16 standard hardware interrupts (IRQs 0-15).
- * 2. Remaps the Programmable Interrupt Controllers (PICs) to safely route IRQs
- * to IDT entries 32 and above, preventing conflicts with the CPU exceptions.
- * 3. Finally, it uses the 'lidt' instruction to load the initialized IDT into the CPU.
- *
- * @return void This function does not return a value.
- */
 void isr_install() {
     set_idt_gate(0, (uint32_t) isr0);
     set_idt_gate(1, (uint32_t) isr1);
@@ -262,17 +188,6 @@ char *scan_code_specials[] = {
 
 char key_buffer[256];
 
-/**
- * @brief Handles the backspace action on a string buffer.
- *
- * This function shortens the given null-terminated string buffer by one 
- * character if the buffer is not already empty. The character at the 
- * end of the string is replaced with the null terminator ('\0').
- * * @param buffer The character array buffer to perform the backspace action on. 
- * This parameter is currently only read to determine the length.
- * @return bool Returns true if a character was removed (the string length was > 0).
- * Returns false if the buffer was already empty.
- */
 bool backspace(char buffer[]) {
     int string_len = string_length(buffer);
     if (string_len > 0) {
@@ -294,20 +209,6 @@ void parse_command(char *input) {
     print_string("\n> ");
 }
 
-
-
-/**
- * @brief Retrieves the current status (on/off) of a keyboard lock key LED.
- *
- * This function communicates directly with the PS/2 keyboard controller
- * to get the current LED status byte and checks the specified bit.
- *
- * @param lock_bit The bit mask corresponding to the desired lock key:
- * - 0x01 (Bit 0): Scroll Lock
- * - 0x02 (Bit 1): Num Lock
- * - 0x04 (Bit 2): Caps Lock
- * @return bool Returns true if the specified lock light is ON (lit), false otherwise.
- */
 bool get_lock_status(int lock_bit) {
     uint8_t status_byte;
     uint8_t ack_byte;
@@ -334,16 +235,6 @@ bool get_lock_status(int lock_bit) {
     return (status_byte & lock_bit) != 0;
 }
 
-/**
- * @brief Sends a command to the PS/2 keyboard to set the status of the lock key LEDs.
- *
- * The caller determines the combined state of all three lock keys (Scroll, Num, Caps) 
- * and provides the resulting status byte to this function.
- *
- * @param lock_bit The 8-bit status byte where bits 0, 1, and 2 represent 
- * the desired ON/OFF state for Scroll, Num, and Caps Lock, respectively.
- * @return bool Returns true if the keyboard acknowledged the command, false otherwise.
- */
 bool set_lock_status(uint8_t lock_bit) {
     uint8_t ack_byte;
 
@@ -373,20 +264,6 @@ bool set_lock_status(uint8_t lock_bit) {
 uint8_t current_led_status_byte = 0x00;
 bool is_shift_pressed = false;
 
-/**
- * @brief Toggles the state of a single keyboard lock key LED and updates the hardware.
- *
- * This function handles the state change for a lock key press (Caps, Num, or Scroll). 
- * It updates the global state variable 'current_led_status_byte' by flipping the 
- * bit corresponding to the pressed key (using the XOR operation), commands the 
- * PS/2 keyboard hardware to reflect the full new state, and returns the resulting
- * status byte.
- *
- * @param lock_bit The bit mask corresponding to the lock key whose state 
- * should be toggled (e.g., 0x04 for Caps Lock).
- * @return uint8_t The new, complete 8-bit LED status byte after the toggle 
- * and hardware command have been executed.
- */
 uint8_t toggle_lock_led(uint8_t lock_bit) {
     current_led_status_byte ^= lock_bit;
     set_lock_status(current_led_status_byte);
@@ -455,15 +332,6 @@ static void keyboard_callback(registers *reg) {
         }
 }
 
-/**
- * @brief Initializes the keyboard hardware interrupt handler.
- *
- * This function is responsible for linking the custom C-level keyboard handler
- * to the appropriate hardware interrupt request (IRQ) line. This is the final
- * step required to enable the operating system to respond to keyboard input.
- *
- * @return void This function does not return a value.
- */
 void initialize_keyboard() {
     register_interrupt_handler(IRQ1, keyboard_callback);
 }

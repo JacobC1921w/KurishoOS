@@ -24,6 +24,6 @@ and test it out using:
 
 This will open a qemu window that *hopefully* should boot.
 
-Any suggestion please let me know! This is mainly a hobby thing and I'm trying to do it myself **entirely** - ~~no AI used at all~~ I used AI to write a couple of docstrings I'm so sorry ;(.
+Any suggestion please let me know! This is mainly a hobby thing and I'm trying to do it myself **entirely** - ~~no AI used at all~~ ~~I used AI to write a couple of docstrings I'm so sorry ;(.~~ Removed all AI stuff, can say with certainty there is no AI code here now :).
 
 The end goal is to make an operating system that is fully function, meaning a graphical manager, login, fully functional shell, filesystem, networking etc.

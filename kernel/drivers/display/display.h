@@ -1,3 +1,4 @@
+#include <stddef.h>
 #ifndef DISPLAY_H
 #define DISPLAY_H
 
@@ -18,7 +19,6 @@ void set_char_at_memory(char character, int offset);
 int get_row_from_offset(int offset);
 int get_offset(int col, int row);
 int move_offset_to_newline(int offset);
-void memory_copy(char *source, char *dest, int n_bytes);
 int scroll_line(int offset);
 void print_string(char *string);
 void clear_screen();

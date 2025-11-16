@@ -1,5 +1,6 @@
 #include "display.h"
 #include "../port/port.h"
+#include "../memory/memory.h"
 
 void set_cursor(int offset) {
     offset /= 2;
@@ -33,13 +34,6 @@ int get_offset(int col, int row) {
 
 int move_offset_to_newline(int offset) {
     return get_offset(0, get_row_from_offset(offset) + 1);
-}
-
-void memory_copy(char *source, char *dest, int n_bytes) {
-    int i;
-    for(i = 0; i < n_bytes; i++) {
-        *(dest + i) = *(source + i);
-    }
 }
 
 int scroll_line(int offset) {

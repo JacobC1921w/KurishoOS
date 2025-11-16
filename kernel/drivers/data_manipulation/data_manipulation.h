@@ -9,5 +9,8 @@ void append_char(char input[], char n);
 int string_compare(char s1[], char s2[]);
 char char_lower(char c);
 char char_upper(char c);
+int char_is_whitespace(char input);
+char *string_trim(char *input);
+char *string_duplicate(const char *input, int num_bytes);
 
 #endif

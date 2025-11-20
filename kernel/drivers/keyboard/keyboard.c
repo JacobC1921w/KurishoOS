@@ -5,6 +5,7 @@
 #include "../port/port.h"
 #include "../data_manipulation/data_manipulation.h"
 #include "../memory/memory.h"
+#include "./shell.h"
 
  char *exception_messages[] = {
     "Exception: Divide error",
@@ -197,32 +198,6 @@ bool backspace(char buffer[]) {
     } else {
         return false;
     }
-}
-
-void parse_command(char *s1) {
-    s1 = string_trim(s1);
-    if (string_compare(s1, "exit") == 0) {
-        print_string("Halting system processes...\n");
-        asm volatile("hlt");
-    } else if (string_compare(s1, "memtest") == 0) {
-        print_string("Testing memory with an array of 10...");
-
-        int n = 10;
-
-        int *ptr = (int *) memory_allocate(n * sizeof(int));
-        for (int i = 0; i < n; ++i) {
-            ptr[i] = i+1;
-        }
-        memory_free(ptr);
-
-        print_string("DONE\n> ");
-
-        return;
-    }
-
-    print_string("Unknown command: ");
-    print_string(s1);
-    print_string("\n> ");
 }
 
 bool get_lock_status(int lock_bit) {

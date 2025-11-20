@@ -134,7 +134,6 @@ void irq_handler(registers *reg);
 void load_idt();
 void isr_install();
 bool backspace(char buffer[]);
-void parse_command(char *s1);
 bool get_lock_status(int lock_bit);
 bool set_lock_status(uint8_t lock_bit);
 uint8_t toggle_lock_led(uint8_t lock_bit);

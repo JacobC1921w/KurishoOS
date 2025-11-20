@@ -39,9 +39,9 @@ int string_length(char input[]) {
     return i;
 }
 
-void append_char(char input[], char n) {
+void append_char(char input[], char c) {
     int string_len = string_length(input);
-    input[string_len] = n;
+    input[string_len] = c;
     input[string_len + 1] = '\0';
 }
 
@@ -53,30 +53,30 @@ int string_compare(char s1[], char s2[]) {
     return s1[i] - s2[i];
 }
 
-char char_lower(char input) {
-    if (input >= 'A' && input <= 'Z') {
-        input = input | 0x20;
+char char_lower(char c) {
+    if (c >= 'A' && c <= 'Z') {
+        c = c | 0x20;
     }
-    return input;
+    return c;
 }
 
-char char_upper(char input) {
-    if (input >= 'a' && input <= 'z') {
-        input = input & ~0x20;
+char char_upper(char c) {
+    if (c >= 'a' && c <= 'z') {
+        c = c & ~0x20;
     }
-    return input;
+    return c;
 }
 
-int char_is_whitespace(char input) {
-    return (input == ' ' || input == '\t' || input == '\n' || input == '\v' || input == '\f' || input == '\r');
+int char_is_whitespace(char c) {
+    return (c == ' ' || c == '\t' || c == '\n' || c == '\v' || c == '\f' || c == '\r');
 }
 
-char *string_trim(char *input) {
-    if (input == NULL || *input == '\0') {
-        return input;
+char *string_trim(char *s1) {
+    if (s1 == NULL || *s1 == '\0') {
+        return s1;
     }
 
-    char *start = input;
+    char *start = s1;
     char *end;
     size_t len;
 
@@ -85,8 +85,8 @@ char *string_trim(char *input) {
     }
 
     if (*start == '\0') {
-        *input = '\0';
-        return input;
+        *s1 = '\0';
+        return s1;
     }
 
     len = string_length(start);
@@ -98,15 +98,15 @@ char *string_trim(char *input) {
 
     *(end + 1) = '\0';
 
-    if (start != input) {
-        memory_move(input, start, string_length(start) + 1);
+    if (start != s1) {
+        memory_move(s1, start, string_length(start) + 1);
     }
 
-    return input;
+    return s1;
 }
 
-char *string_duplicate(char *input, int num_bytes) {
-    if (input == NULL) {
+char *string_duplicate(char *s1, int num_bytes) {
+    if (s1 == NULL) {
         return NULL;
     }
 
@@ -115,8 +115,43 @@ char *string_duplicate(char *input, int num_bytes) {
         return NULL;
     }
 
-    memory_copy(new_string, input, num_bytes);
+    memory_copy(new_string, s1, num_bytes);
     new_string[num_bytes] = '\0';
 
     return new_string;
+}
+
+char *char_repeat(char c, int iter) {
+    char *return_string = (char *) memory_allocate(iter + 1);
+    for (int i = 0; i <= iter; i++) {
+        return_string[i] = c;
+    }
+
+    return_string[iter] = '\0';
+    return return_string;
+}
+
+char *string_concat(char *s1, char *s2) {
+    int s1_length = string_length(s1);
+    int s2_length = string_length(s2);
+    char *return_string = (char *) memory_allocate(s1_length + s2_length - 1);
+
+    for (int i = 0; i <= s1_length; i++) {
+        if (s1[i] == '\0') {
+            break;
+        } else {
+            return_string[i] = s1[i];
+        }
+    }
+
+    for (int i = 0; i <= s2_length; i++) {
+        if (s2[i] == '\0') {
+            break;
+        } else {
+            return_string[s1_length + i] = s2[i];
+        }
+    }
+
+    return_string[s1_length + s2_length] = '\0';
+    return return_string;
 }

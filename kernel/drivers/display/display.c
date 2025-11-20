@@ -1,6 +1,7 @@
 #include "display.h"
 #include "../port/port.h"
 #include "../memory/memory.h"
+#include "../data_manipulation/data_manipulation.h"
 
 void set_cursor(int offset) {
     offset /= 2;
@@ -18,9 +19,9 @@ int get_cursor() {
     return offset * 2;
 }
 
-void set_char_at_memory(char character, int offset) {
+void set_char_at_memory(char c, int offset) {
     unsigned char *video_memory = (unsigned char *) VIDEO_ADDRESS;
-    video_memory[offset] = character;
+    video_memory[offset] = c;
     video_memory[offset + 1] = WHITE_ON_BLACK;
 }
 
@@ -50,23 +51,27 @@ int scroll_line(int offset) {
     return offset - 2 * MAX_COLS;
 }
 
-void print_string(char *string) {
+void print_string(char *s1) {
     int offset = get_cursor();
     int i = 0;
-    while (string[i] != 0) {
+    while (s1[i] != 0) {
         if (offset >= MAX_ROWS * MAX_COLS * 2) {
             offset = scroll_line(offset);
         }
-        if (string[i] == '\n') {
+        if (s1[i] == '\n') {
             offset = move_offset_to_newline(offset);
         } else {
-            set_char_at_memory(string[i], offset);
+            set_char_at_memory(s1[i], offset);
             offset += 2;
         }
         i++;
     }
 
     set_cursor(offset);
+}
+
+void println_string(char *s1) {
+    print_string(string_concat(s1, "\n"));
 }
 
 void clear_screen() {

@@ -3,15 +3,10 @@
 #include "./drivers/port/port.h"
 #include "./drivers/display/display.h"
 #include "./drivers/keyboard/keyboard.h"
+#include "./drivers/data_manipulation/data_manipulation.h"
 
 void main() {
     clear_screen();
-
-    // Print the banner - The dashes should be generated automatically in the future using something like print_string(23+len(BUILD_NUMBER))
-    print_string("-------------------------------\n");
-    print_string("\n Welcome to Kurisho OS ");
-    print_string(BUILD_NUMBER);
-    print_string("\n-------------------------------\n");
 
     // Install ISR
     print_string("Installing interrupt service routines (ISRs)...");
@@ -27,6 +22,13 @@ void main() {
     print_string("Initializing keyboard (IRQ 1)...");
     initialize_keyboard();
     print_string(" DONE!\n");
+    
+    clear_screen();
 
-    print_string("> ");
+    // Print the banner
+    println_string(char_repeat('-', string_length(BUILD_NUMBER) + 23));
+    println_string(string_concat("Welcome to Kurisho OS ", string_concat(BUILD_NUMBER, "\n")));
+    println_string(char_repeat('-', string_length(BUILD_NUMBER) + 23));
+
+    print_string("> ")
 }

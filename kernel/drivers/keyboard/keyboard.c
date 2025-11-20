@@ -199,12 +199,12 @@ bool backspace(char buffer[]) {
     }
 }
 
-void parse_command(char *input) {
-    input = string_trim(input);
-    if (string_compare(input, "exit") == 0) {
+void parse_command(char *s1) {
+    s1 = string_trim(s1);
+    if (string_compare(s1, "exit") == 0) {
         print_string("Halting system processes...\n");
         asm volatile("hlt");
-    } else if (string_compare(input, "memtest") == 0) {
+    } else if (string_compare(s1, "memtest") == 0) {
         print_string("Testing memory with an array of 10...");
 
         int n = 10;
@@ -221,7 +221,7 @@ void parse_command(char *input) {
     }
 
     print_string("Unknown command: ");
-    print_string(input);
+    print_string(s1);
     print_string("\n> ");
 }
 

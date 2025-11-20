@@ -15,12 +15,13 @@
 
 void set_cursor(int offset);
 int get_cursor();
-void set_char_at_memory(char character, int offset);
+void set_char_at_memory(char c, int offset);
 int get_row_from_offset(int offset);
 int get_offset(int col, int row);
 int move_offset_to_newline(int offset);
 int scroll_line(int offset);
-void print_string(char *string);
+void print_string(char *s1);
+void println_string(char *s1);
 void clear_screen();
 void print_backspace();
 

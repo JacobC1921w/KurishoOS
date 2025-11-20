@@ -30,5 +30,5 @@ void main() {
     println_string(string_concat("Welcome to Kurisho OS ", string_concat(BUILD_NUMBER, "\n")));
     println_string(char_repeat('-', string_length(BUILD_NUMBER) + 23));
 
-    print_string("> ")
+    print_string("> ");
 }

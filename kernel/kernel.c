@@ -27,8 +27,7 @@ void main() {
 
     // Print the banner
     println_string(char_repeat('-', string_length(BUILD_NUMBER) + 23));
-    print_string("Welcome to Kurisho OS ");
-    println_string(BUILD_NUMBER);
+    println_string(string_concat("Welcome to Kurisho OS ", BUILD_NUMBER));
     println_string(char_repeat('-', string_length(BUILD_NUMBER) + 23));
 
     print_string("> ");

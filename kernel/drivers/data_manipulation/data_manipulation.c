@@ -118,6 +118,7 @@ char *string_duplicate(char *s1, int num_bytes) {
     memory_copy(new_string, s1, num_bytes);
     new_string[num_bytes] = '\0';
 
+    memory_free(new_string);
     return new_string;
 }
 
@@ -128,6 +129,7 @@ char *char_repeat(char c, int iter) {
     }
 
     return_string[iter] = '\0';
+    memory_free(return_string);
     return return_string;
 }
 
@@ -153,5 +155,6 @@ char *string_concat(char *s1, char *s2) {
     }
 
     return_string[s1_length + s2_length] = '\0';
+    memory_free(return_string);
     return return_string;
 }

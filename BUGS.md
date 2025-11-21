@@ -1,0 +1,2 @@
+# BUGS
+1.Everything memory-related need to be re-researched and re-written. Obviously I have just made asumptions and not double-checked. This is evident specifically through the **t**est-**s**tring**c**oncat command. Exceptionally frustrating.

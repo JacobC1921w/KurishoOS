@@ -5,7 +5,7 @@
 #include "../port/port.h"
 #include "../data_manipulation/data_manipulation.h"
 #include "../memory/memory.h"
-#include "./shell.h"
+#include "../../shell/shell.h"
 
  char *exception_messages[] = {
     "Exception: Divide error",
@@ -35,8 +35,7 @@
 void isr_handler(registers *reg) {
 
     if (reg->interrupt_number < 22) {
-        print_string(exception_messages[reg->interrupt_number]);
-        print_string("\n");
+        println_string(exception_messages[reg->interrupt_number]);
     } else if (reg->interrupt_number >= 22 && reg->interrupt_number <= 31) {
         char interrupt_string[11];
         print_string("Exception: Future reservation (interrupt number: ");

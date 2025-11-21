@@ -1,4 +1,5 @@
 #include "memory.h"
+#include <stdbool.h>
 
 
 void memory_copy(char *source, char *dest, int n_bytes) {

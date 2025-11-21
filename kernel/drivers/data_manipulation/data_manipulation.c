@@ -129,32 +129,22 @@ char *char_repeat(char c, int iter) {
     }
 
     return_string[iter] = '\0';
-    memory_free(return_string);
     return return_string;
 }
 
 char *string_concat(char *s1, char *s2) {
     int s1_length = string_length(s1);
     int s2_length = string_length(s2);
-    char *return_string = (char *) memory_allocate(s1_length + s2_length - 1);
+    char *return_string = (char *) memory_allocate(s1_length + s2_length + 1);
 
-    for (int i = 0; i <= s1_length; i++) {
-        if (s1[i] == '\0') {
-            break;
-        } else {
-            return_string[i] = s1[i];
-        }
+    for (int i = 0; i < s1_length; i++) {
+        return_string[i] = s1[i];
     }
 
     for (int i = 0; i <= s2_length; i++) {
-        if (s2[i] == '\0') {
-            break;
-        } else {
-            return_string[s1_length + i] = s2[i];
-        }
+        return_string[s1_length + i] = s2[i];
     }
 
     return_string[s1_length + s2_length] = '\0';
-    memory_free(return_string);
     return return_string;
 }

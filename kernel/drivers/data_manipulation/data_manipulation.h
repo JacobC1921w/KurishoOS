@@ -6,7 +6,7 @@
 char* uint_32_base_convert(uint32_t value, char *buffer, int base);
 int string_length(char input[]);
 void append_char(char input[], char c);
-int string_compare(char s1[], char s2[]);
+bool string_compare(char s1[], char s2[]);
 char char_lower(char c);
 char char_upper(char c);
 int char_is_whitespace(char s1);

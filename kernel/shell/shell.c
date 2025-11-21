@@ -6,12 +6,12 @@
 void parse_command(char *s1) {
     s1 = string_trim(s1);
 
-    if (string_compare(s1, "") == 0) {
+    if (string_compare(s1, "")) {
         // Do nothing, enter has just been pressed with no given input
-    } else if (string_compare(s1, "exit") == 0) {
+    } else if (string_compare(s1, "exit")) {
         println_string("Halting system processes...");
         asm volatile("hlt");
-    } else if (string_compare(s1, "t-sc") == 0) {
+    } else if (string_compare(s1, "t-sc")) {
         println_string("Testing string_concat()...");
         println_string(string_concat("A ", string_concat("B ", string_concat("C ", "D "))));
     } else {
